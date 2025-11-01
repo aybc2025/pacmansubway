@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>פקמן ברכבת התחתית</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #111;
+            color: white;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            direction: rtl;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000;
+            overflow: hidden;
+        }
+        
+        #game-canvas {
+            display: block;
+            background-color: #111;
+        }
+        
+        #score-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 10px;
+            z-index: 10;
+        }
+        
+        #lives-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 10px;
+            z-index: 10;
+        }
+        
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 100;
+        }
+        
+        #game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 100;
+        }
+        
+        #pause-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+        }
+        
+        button {
+            padding: 20px 40px;
+            font-size: 24px;
+            background-color: #FFD700;
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 30px;
+            font-weight: bold;
+            box-shadow: 0 5px 0 #B8860B;
+            transition: all 0.2s;
+        }
+        
+        button:hover {
+            background-color: #FFC800;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 0 #B8860B;
+        }
+        
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 3px 0 #B8860B;
+        }
+        
+        h1 {
+            color: #FFD700;
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .instructions {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px;
+            max-width: 600px;
+            text-align: center;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 10;
+        }
+        
+        .control-row {
+            display: flex;
+            justify-content: center;
+            margin: 5px 0;
+        }
+        
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            background-color: rgba(255, 215, 0, 0.8);
+            margin: 5px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        
+        .control-btn:active {
+            background-color: rgba(255, 215, 0, 1);
+            transform: translateY(2px);
+            box-shadow: 0 2px 3px rgba(0,0,0,0.3);
+        }
+        
+        #pause-btn {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 215, 0, 0.8);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+        
+        #pause-btn:active {
+            background-color: rgba(255, 215, 0, 1);
+            transform: translateY(2px);
+            box-shadow: 0 2px 3px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        <div id="score-container">ניקוד: <span id="score">0</span></div>
+        <div id="lives-container">חיים: <span id="lives">3</span></div>
+        <div id="level-container" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); font-size: 24px; background-color: rgba(0, 0, 0, 0.7); padding: 10px 15px; border-radius: 10px; z-index: 10;">שלב: <span id="level">1</span></div>
+        
+        <div id="pause-btn">II</div>
+        
+        <div id="controls">
+            <div class="control-row">
+                <div id="up-btn" class="control-btn">↑</div>
+            </div>
+            <div class="control-row">
+                <div id="right-btn" class="control-btn">→</div>
+                <div id="down-btn" class="control-btn">↓</div>
+                <div id="left-btn" class="control-btn">←</div>
+            </div>
+        </div>
+        
+        <div id="start-screen">
+            <h1>פקמן ברכבת התחתית</h1>
+            
+            <div class="instructions">
+                <p>השתמש במקשי החיצים או בלחצנים על המסך כדי לנווט את הפקמן</p>
+                <p>הפקמן יכול לנוע רק על מסלולי הרכבת הצבעוניים!</p>
+                <p>אכול את כל הנקודות הלבנות כדי לעבור לשלב הבא</p>
+                <p>כל פגיעה ברכבת מורידה חיים אחד - היזהר!</p>
+                <p>לחץ על כפתור העצירה (II) כדי לעצור את המשחק</p>
+            </div>
+            
+            <button id="start-button">התחל משחק</button>
+        </div>
+        
+        <div id="game-over-screen">
+            <h1>המשחק נגמר!</h1>
+            <p style="font-size: 24px;">הניקוד הסופי שלך: <span id="final-score">0</span></p>
+            <button id="restart-button">שחק שוב</button>
+        </div>
+        
+        <div id="pause-screen">
+            <h1>המשחק מושהה</h1>
+            <button id="resume-button">המשך משחק</button>
+            <button id="restart-from-pause-button">התחל מחדש</button>
+        </div>
+    </div>
+
+    <script>
+    // Ensure the script runs only after the DOM is fully loaded
+    window.addEventListener('load', function() {
+        // Global game variables
+        let gameRunning = false;
+        let gamePaused = false;
+        let score = 0;
+        let lives = 3;
+        let level = 1;
+        let dots = [];
+        let trains = [];
+        let tracks = [];
+        let animationId;
+        
+        // Constants
+        const dotRadius = 4;
+        const trackTolerance = 4;
+        
+        // Canvas setup
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        // UI elements
+        const scoreElement = document.getElementById('score');
+        const livesElement = document.getElementById('lives');
+        const finalScoreElement = document.getElementById('final-score');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const pauseScreen = document.getElementById('pause-screen');
+        const controls = document.getElementById('controls');
+        const pauseBtn = document.getElementById('pause-btn');
+        
+        // Control buttons
+        const upBtn = document.getElementById('up-btn');
+        const downBtn = document.getElementById('down-btn');
+        const leftBtn = document.getElementById('left-btn');
+        const rightBtn = document.getElementById('right-btn');
+        const resumeBtn = document.getElementById('resume-button');
+        const restartFromPauseBtn = document.getElementById('restart-from-pause-button');
+        
+        // Pacman data
+        const pacman = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 20,
+            speed: 2,
+            angle: 0.2,
+            mouthOpen: 0.3,
+            mouthDir: 0.02,
+            direction: { x: 1, y: 0 },
+            targetDirection: { x: 1, y: 0 },
+            color: '#FFD700',
+            onTrack: false,
+            currentTrack: null
+        };
+        
+        // Train types (colors and lines)
+        const trainTypes = [
+            { color: '#FF0000', label: 'R', lineType: 'light', speed: 1.5 },
+            { color: '#00AA00', label: 'G', lineType: 'light', speed: 1.3 },
+            { color: '#800080', label: 'P', lineType: 'light', speed: 1.7 },
+            { color: '#0066FF', label: '1', lineType: 'metro', speed: 1.8 },
+            { color: '#FF8C00', label: '2', lineType: 'metro', speed: 2.0 },
+            { color: '#FFD700', label: '3', lineType: 'metro', speed: 2.2 }
+        ];
+
+        // -----------------------------------------------
+        // Helper functions
+        // -----------------------------------------------
+        
+        // Check if a point is on a line
+        function isPointOnLine(px, py, x1, y1, x2, y2, tolerance) {
+            const lineLength = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+            if (lineLength === 0) return false;
+            
+            const t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / (lineLength * lineLength);
+            
+            if (t < 0 || t > 1) {
+                return false;
+            }
+            
+            const closestX = x1 + t * (x2 - x1);
+            const closestY = y1 + t * (y2 - y1);
+            
+            const distance = Math.sqrt((px - closestX) ** 2 + (py - closestY) ** 2);
+            
+            return distance <= tolerance;
+        }
+        
+        // Check if a point is on a track
+        function isOnTrack(x, y, tolerance = 15) {
+            for (const track of tracks) {
+                if (isPointOnLine(x, y, track.start.x, track.start.y, track.end.x, track.end.y, tolerance)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        // Get the track that a point is on
+        function getTrackAt(x, y, tolerance = 15) {
+            for (const track of tracks) {
+                if (isPointOnLine(x, y, track.start.x, track.start.y, track.end.x, track.end.y, tolerance)) {
+                    return track;
+                }
+            }
+            return null;
+        }
+        
+        // Check if at a track intersection
+        function isAtIntersection(x, y, tolerance = 20) {
+            let trackCount = 0;
+            for (const track of tracks) {
+                if (isPointOnLine(x, y, track.start.x, track.start.y, track.end.x, track.end.y, tolerance)) {
+                    trackCount++;
+                    if (trackCount > 1) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        
+        // Check if a direction is valid on a track
+        function isValidDirectionOnTrack(track, direction) {
+            if (track.direction === 'horizontal' && (direction.x !== 0 && direction.y === 0)) {
+                return true;
+            }
+            if (track.direction === 'vertical' && (direction.x === 0 && direction.y !== 0)) {
+                return true;
+            }
+            return false;
+        }
+        
+        // Find the intersection between two lines
+        function findLineIntersection(x1, y1, x2, y2, x3, y3, x4, y4) {
+            const denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
+            
+            if (denominator === 0) {
+                return null;
+            }
+            
+            const ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator;
+            const ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator;
+            
+            if (ua < 0 || ua > 1 || ub < 0 || ub > 1) {
+                return null;
+            }
+            
+            const x = x1 + ua * (x2 - x1);
+            const y = y1 + ua * (y2 - y1);
+            
+            return { x, y };
+        }
+        
+        // Find the closest point on a specific track
+        function findClosestPointOnTrack(x, y, track) {
+            const x1 = track.start.x;
+            const y1 = track.start.y;
+            const x2 = track.end.x;
+            const y2 = track.end.y;
+            
+            const A = x - x1;
+            const B = y - y1;
+            const C = x2 - x1;
+            const D = y2 - y1;
+            
+            const dot = A * C + B * D;
+            const lenSq = C * C + D * D;
+            let param = -1;
+            
+            if (lenSq !== 0) {
+                param = dot / lenSq;
+            }
+            
+            let xx, yy;
+            
+            if (param < 0) {
+                xx = x1;
+                yy = y1;
+            } else if (param > 1) {
+                xx = x2;
+                yy = y2;
+            } else {
+                xx = x1 + param * C;
+                yy = y1 + param * D;
+            }
+            
+            return { x: xx, y: yy };
+        }
+        
+        // Find the closest point on any track
+        function findClosestPointOnAnyTrack(x, y) {
+            let closestPoint = null;
+            let minDistance = Infinity;
+            
+            tracks.forEach(track => {
+                const point = findClosestPointOnTrack(x, y, track);
+                const distance = Math.sqrt(
+                    Math.pow(x - point.x, 2) + Math.pow(y - point.y, 2)
+                );
+                
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestPoint = point;
+                }
+            });
+            
+            return closestPoint;
+        }
+        
+        // Find intersections on a track
+        function findIntersectionsOnTrack(track) {
+            const intersections = [];
+            
+            intersections.push({ x: track.start.x, y: track.start.y });
+            intersections.push({ x: track.end.x, y: track.end.y });
+            
+            for (const otherTrack of tracks) {
+                if (otherTrack === track) continue;
+                
+                const intersection = findLineIntersection(
+                    track.start.x, track.start.y, track.end.x, track.end.y,
+                    otherTrack.start.x, otherTrack.start.y, otherTrack.end.x, otherTrack.end.y
+                );
+                
+                if (intersection) {
+                    intersections.push(intersection);
+                }
+            }
+            
+            return intersections;
+        }
+        
+        // Find the nearest intersection
+        function findNearestIntersection(x, y) {
+            let nearest = null;
+            let minDist = Infinity;
+            
+            for (let i = 0; i < tracks.length; i++) {
+                for (let j = i + 1; j < tracks.length; j++) {
+                    const track1 = tracks[i];
+                    const track2 = tracks[j];
+                    
+                    if (track1.direction !== track2.direction) {
+                        const intersection = findLineIntersection(
+                            track1.start.x, track1.start.y, track1.end.x, track1.end.y,
+                            track2.start.x, track2.start.y, track2.end.x, track2.end.y
+                        );
+                        
+                        if (intersection) {
+                            const dx = x - intersection.x;
+                            const dy = y - intersection.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            
+                            if (dist < minDist) {
+                                minDist = dist;
+                                nearest = intersection;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return nearest;
+        }
+        
+        // Update the level indicator
+        function updateLevelIndicator() {
+            const levelIndicatorElement = document.getElementById('level');
+            if (levelIndicatorElement) {
+                levelIndicatorElement.textContent = level;
+            }
+        }
+
+        // -----------------------------------------------
+        // Creation functions
+        // -----------------------------------------------
+        
+        // Create train tracks
+        function createTracks() {
+            tracks = [];
+            
+            const horizontalTracks = 3;
+            const verticalTracks = 3;
+            
+            const horizontalGap = canvas.height / (horizontalTracks + 1);
+            const verticalGap = canvas.width / (verticalTracks + 1);
+            
+            for (let i = 0; i < horizontalTracks; i++) {
+                const y = horizontalGap * (i + 1);
+                const trackType = trainTypes[Math.floor(Math.random() * trainTypes.length)];
+                
+                tracks.push({
+                    start: { x: 0, y: y },
+                    end: { x: canvas.width, y: y },
+                    direction: 'horizontal',
+                    color: trackType.color,
+                    label: trackType.label,
+                    width: 10
+                });
+            }
+            
+            for (let i = 0; i < verticalTracks; i++) {
+                const x = verticalGap * (i + 1);
+                const trackType = trainTypes[Math.floor(Math.random() * trainTypes.length)];
+                
+                tracks.push({
+                    start: { x: x, y: 0 },
+                    end: { x: x, y: canvas.height },
+                    direction: 'vertical',
+                    color: trackType.color,
+                    label: trackType.label,
+                    width: 10
+                });
+            }
+        }
+        
+        // Create food dots
+        function createDots() {
+            dots = [];
+            
+            tracks.forEach(track => {
+                let numDots;
+                if (track.direction === 'horizontal') {
+                    numDots = Math.floor(canvas.width / 30);
+                } else if (track.direction === 'vertical') {
+                    numDots = Math.floor(canvas.height / 30);
+                } else {
+                    return;
+                }
+                
+                for (let i = 0; i < numDots; i++) {
+                    let x, y;
+                    
+                    if (track.direction === 'horizontal') {
+                        x = (canvas.width / numDots) * i;
+                        y = track.start.y;
+                    } else if (track.direction === 'vertical') {
+                        x = track.start.x;
+                        y = (canvas.height / numDots) * i;
+                    }
+                    
+                    if (x > 0 && x < canvas.width && y > 0 && y < canvas.height) {
+                        const dot = {
+                            x: x,
+                            y: y,
+                            radius: dotRadius,
+                            color: '#FFFFFF',
+                            track: track
+                        };
+                        dots.push(dot);
+                    }
+                }
+            });
+        }
+        
+        // Create train carriages
+        function createTrains() {
+            trains = [];
+            
+            if (!tracks || tracks.length === 0) {
+                console.error("No tracks to create trains on");
+                return;
+            }
+            
+            for (let i = 0; i < tracks.length; i++) {
+                if (Math.random() < 0.4) {
+                    const track = tracks[i];
+                    
+                    let width, height;
+                    if (track.direction === 'vertical') {
+                        width = 25;
+                        height = 60;
+                    } else if (track.direction === 'horizontal') {
+                        width = 60;
+                        height = 25;
+                    } else {
+                        width = 40;
+                        height = 40;
+                    }
+                    
+                    const startFromBeginning = Math.random() < 0.5;
+                    const startPoint = startFromBeginning ? track.start : track.end;
+                    
+                    let dirX, dirY;
+                    if (startFromBeginning) {
+                        dirX = track.end.x - track.start.x;
+                        dirY = track.end.y - track.start.y;
+                    } else {
+                        dirX = track.start.x - track.end.x;
+                        dirY = track.start.y - track.end.y;
+                    }
+                    
+                    const magnitude = Math.sqrt(dirX * dirX + dirY * dirY);
+                    if (magnitude > 0) {
+                        dirX /= magnitude;
+                        dirY /= magnitude;
+                    }
+                    
+                    const trainTypeIndex = trainTypes.findIndex(t => t.color === track.color);
+                    const trainType = trainTypes[trainTypeIndex >= 0 ? trainTypeIndex : 0];
+                    
+                    const train = {
+                        x: startPoint.x,
+                        y: startPoint.y,
+                        width: width,
+                        height: height,
+                        speed: trainType.speed * (0.8 + level * 0.1),
+                        color: track.color,
+                        label: track.label,
+                        track: i,
+                        direction: { x: dirX, y: dirY }
+                    };
+                    
+                    trains.push(train);
+                }
+            }
+        }
+        
+        // -----------------------------------------------
+        // Drawing functions
+        // -----------------------------------------------
+        
+        // Draw train tracks
+        function drawTracks() {
+            ctx.save();
+            
+            tracks.forEach(track => {
+                ctx.beginPath();
+                ctx.moveTo(track.start.x, track.start.y);
+                ctx.lineTo(track.end.x, track.end.y);
+                ctx.lineWidth = 15;
+                ctx.strokeStyle = track.color;
+                ctx.globalAlpha = 0.8;
+                ctx.stroke();
+            });
+            
+            ctx.restore();
+        }
+        
+        // Draw food dots
+        function drawDots() {
+            dots.forEach(dot => {
+                const pulseSize = Math.sin(Date.now() * 0.01) * 0.5 + 1;
+                
+                ctx.beginPath();
+                ctx.arc(dot.x, dot.y, dot.radius * 1.5 * pulseSize, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.arc(dot.x, dot.y, dot.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fill();
+            });
+        }
+
+        // Draw Pacman
+        function drawPacman() {
+            ctx.save();
+            
+            pacman.mouthOpen += pacman.mouthDir;
+            if (pacman.mouthOpen > 0.3 || pacman.mouthOpen < 0.05) {
+                pacman.mouthDir *= -1;
+            }
+            
+            let rotation = 0;
+            if (pacman.direction.x > 0) rotation = 0;
+            else if (pacman.direction.x < 0) rotation = Math.PI;
+            else if (pacman.direction.y > 0) rotation = Math.PI / 2;
+            else if (pacman.direction.y < 0) rotation = Math.PI * 1.5;
+            
+            ctx.translate(pacman.x, pacman.y);
+            ctx.rotate(rotation);
+            
+            ctx.beginPath();
+            ctx.arc(0, 0, pacman.radius, pacman.mouthOpen, Math.PI * 2 - pacman.mouthOpen);
+            ctx.lineTo(0, 0);
+            ctx.fillStyle = pacman.color;
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(4, -10, 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#000000';
+            ctx.fill();
+            
+            ctx.restore();
+        }
+
+        // Draw train carriages
+        function drawTrains() {
+            trains.forEach(train => {
+                ctx.save();
+                
+                let angle = 0;
+                if (train.direction.x !== 0 || train.direction.y !== 0) {
+                    angle = Math.atan2(train.direction.y, train.direction.x);
+                }
+                
+                ctx.translate(train.x, train.y);
+                ctx.rotate(angle);
+                
+                const halfWidth = train.width / 2;
+                const halfHeight = train.height / 2;
+                
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.fillRect(-halfWidth + 5, -halfHeight + 5, train.width, train.height);
+                
+                ctx.fillStyle = train.color;
+                ctx.fillRect(-halfWidth, -halfHeight, train.width, train.height);
+                
+                ctx.beginPath();
+                ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                ctx.fillStyle = train.color;
+                ctx.fill();
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'bold 20px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(train.label, 0, 0);
+                
+                ctx.restore();
+            });
+        }
+        
+        // -----------------------------------------------
+        // Update functions
+        // -----------------------------------------------
+
+        // Move Pacman
+        function movePacman() {
+            const onTrack = isOnTrack(pacman.x, pacman.y, 4);
+            
+            if (!onTrack) {
+                const closestPoint = findClosestPointOnAnyTrack(pacman.x, pacman.y);
+                if (closestPoint) {
+                    console.log("Returning Pacman to track", pacman.x, pacman.y, "-->", closestPoint.x, closestPoint.y);
+                    pacman.x = closestPoint.x;
+                    pacman.y = closestPoint.y;
+                    
+                    const track = getTrackAt(pacman.x, pacman.y, 4);
+                    if (track) {
+                        if (track.direction === 'horizontal') {
+                            pacman.direction = { x: 1, y: 0 };
+                            pacman.targetDirection = { x: 1, y: 0 };
+                        } else if (track.direction === 'vertical') {
+                            pacman.direction = { x: 0, y: 1 };
+                            pacman.targetDirection = { x: 0, y: 1 };
+                        }
+                    }
+                }
+                return;
+            }
+            
+            const atIntersection = isAtIntersection(pacman.x, pacman.y, 6);
+            
+            if (atIntersection) {
+                if (pacman.targetDirection.x !== 0 || pacman.targetDirection.y !== 0) {
+                    const nextX = pacman.x + pacman.targetDirection.x * 8;
+                    const nextY = pacman.y + pacman.targetDirection.y * 8;
+                    
+                    if (isOnTrack(nextX, nextY, 4)) {
+                        pacman.direction = { 
+                            x: pacman.targetDirection.x, 
+                            y: pacman.targetDirection.y 
+                        };
+                    }
+                }
+            } else {
+                const track = getTrackAt(pacman.x, pacman.y, 4);
+                if (track) {
+                    if (track.direction === 'horizontal' && pacman.targetDirection.y === 0) {
+                        pacman.direction = { x: pacman.targetDirection.x, y: 0 };
+                    } else if (track.direction === 'vertical' && pacman.targetDirection.x === 0) {
+                        pacman.direction = { x: 0, y: pacman.targetDirection.y };
+                    }
+                    
+                    if (track.direction === 'horizontal' && pacman.direction.y !== 0) {
+                        pacman.direction = { x: pacman.direction.x || 1, y: 0 };
+                    } else if (track.direction === 'vertical' && pacman.direction.x !== 0) {
+                        pacman.direction = { x: 0, y: pacman.direction.y || 1 };
+                    }
+                }
+            }
+            
+            const nextX = pacman.x + pacman.direction.x * pacman.speed;
+            const nextY = pacman.y + pacman.direction.y * pacman.speed;
+            
+            const nextPosOnTrack = isOnTrack(nextX, nextY, 4);
+            
+            if (nextPosOnTrack && 
+                nextX > pacman.radius && nextX < canvas.width - pacman.radius &&
+                nextY > pacman.radius && nextY < canvas.height - pacman.radius) {
+                pacman.x = nextX;
+                pacman.y = nextY;
+            } else {
+                if (nextX <= pacman.radius || nextX >= canvas.width - pacman.radius) {
+                    pacman.direction.x *= -1;
+                    pacman.targetDirection.x = pacman.direction.x;
+                }
+                if (nextY <= pacman.radius || nextY >= canvas.height - pacman.radius) {
+                    pacman.direction.y *= -1;
+                    pacman.targetDirection.y = pacman.direction.y;
+                }
+            }
+        }
+
+        // Move trains
+        function moveTrains() {
+            for (let i = trains.length - 1; i >= 0; i--) {
+                const train = trains[i];
+                
+                train.x += train.direction.x * train.speed;
+                train.y += train.direction.y * train.speed;
+                
+                const offScreenX = train.x < -train.width * 2 || train.x > canvas.width + train.width * 2;
+                const offScreenY = train.y < -train.height * 2 || train.y > canvas.height + train.height * 2;
+                
+                if (offScreenX || offScreenY) {
+                    trains.splice(i, 1);
+                    
+                    setTimeout(() => {
+                        if (!gameRunning || gamePaused) return;
+                        
+                        const trackIndex = Math.floor(Math.random() * tracks.length);
+                        const track = tracks[trackIndex];
+                        
+                        if (!track) return;
+                        
+                        let width, height;
+                        if (track.direction === 'vertical') {
+                            width = 25;
+                            height = 60;
+                        } else if (track.direction === 'horizontal') {
+                            width = 60;
+                            height = 25;
+                        } else {
+                            width = 40;
+                            height = 40;
+                        }
+                        
+                        const startFromBeginning = Math.random() < 0.5;
+                        const startPoint = startFromBeginning ? track.start : track.end;
+                        
+                        let dirX, dirY;
+                        if (startFromBeginning) {
+                            dirX = track.end.x - track.start.x;
+                            dirY = track.end.y - track.start.y;
+                        } else {
+                            dirX = track.start.x - track.end.x;
+                            dirY = track.start.y - track.end.y;
+                        }
+                        
+                        const magnitude = Math.sqrt(dirX * dirX + dirY * dirY);
+                        if (magnitude > 0) {
+                            dirX /= magnitude;
+                            dirY /= magnitude;
+                        }
+                        
+                        const trainTypeIndex = trainTypes.findIndex(t => t.color === track.color);
+                        const trainType = trainTypes[trainTypeIndex >= 0 ? trainTypeIndex : 0];
+                        
+                        const newTrain = {
+                            x: startPoint.x,
+                            y: startPoint.y,
+                            width: width,
+                            height: height,
+                            speed: trainType.speed * (0.8 + level * 0.1),
+                            color: track.color,
+                            label: track.label,
+                            track: trackIndex,
+                            direction: { x: dirX, y: dirY }
+                        };
+                        
+                        trains.push(newTrain);
+                    }, Math.random() * 2000 + 1000);
+                }
+            }
+        }
+
+        // Check collisions with food dots
+        function checkDotCollisions() {
+            let dotsEaten = 0;
+
+            for (let i = dots.length - 1; i >= 0; i--) {
+                const dot = dots[i];
+                const dx = pacman.x - dot.x;
+                const dy = pacman.y - dot.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < pacman.radius + dot.radius) {
+                    dots.splice(i, 1);
+                    score += 10;
+                    scoreElement.textContent = score;
+                    dotsEaten++;
+                    
+                    pacman.radius += 2;
+                    setTimeout(() => {
+                        pacman.radius -= 2;
+                    }, 100);
+                }
+            }
+
+            if (dots.length === 0 && gameRunning) {
+                levelUp();
+            }
+        }
+
+        // Check collisions with trains
+        function checkTrainCollisions() {
+            for (let i = 0; i < trains.length; i++) {
+                const train = trains[i];
+                
+                const angle = Math.atan2(train.direction.y, train.direction.x);
+                
+                const halfWidth = train.width / 2;
+                const halfHeight = train.height / 2;
+                
+                const dx = pacman.x - train.x;
+                const dy = pacman.y - train.y;
+                
+                const rotatedX = dx * Math.cos(-angle) - dy * Math.sin(-angle);
+                const rotatedY = dx * Math.sin(-angle) + dy * Math.cos(-angle);
+                
+                if (Math.abs(rotatedX) < halfWidth + pacman.radius * 0.7 && 
+                    Math.abs(rotatedY) < halfHeight + pacman.radius * 0.7) {
+                    
+                    lives--;
+                    livesElement.textContent = lives;
+                    
+                    pacman.color = '#FF0000';
+                    setTimeout(() => {
+                        pacman.color = '#FFD700';
+                    }, 300);
+                    
+                    pacman.x = canvas.width / 2;
+                    pacman.y = canvas.height / 2;
+                    
+                    if (lives <= 0) {
+                        endGame();
+                    }
+                    
+                    break;
+                }
+            }
+        }
+
+        // -----------------------------------------------
+        // Game management functions
+        // -----------------------------------------------
+
+        // Pause game
+        function pauseGame() {
+            if (!gameRunning || gamePaused) return;
+            
+            gamePaused = true;
+            pauseScreen.style.display = 'flex';
+            
+            cancelAnimationFrame(animationId);
+        }
+        
+        // Resume game
+        function resumeGame() {
+            if (!gameRunning || !gamePaused) return;
+            
+            gamePaused = false;
+            pauseScreen.style.display = 'none';
+            
+            gameLoop();
+        }
+
+        // Level up
+        function levelUp() {
+            level++;
+            
+            updateLevelIndicator();
+            
+            pacman.speed *= 1.03;
+            
+            createTracks();
+            createDots();
+            
+            createTrains();
+            
+            const prevGameRunning = gameRunning;
+            const prevGamePaused = gamePaused;
+            
+            gameRunning = false;
+            gamePaused = false;
+            
+            cancelAnimationFrame(animationId);
+            
+            const levelText = document.createElement('div');
+            levelText.textContent = 'רמה ' + level;
+            levelText.style.position = 'absolute';
+            levelText.style.top = '50%';
+            levelText.style.left = '50%';
+            levelText.style.transform = 'translate(-50%, -50%)';
+            levelText.style.fontSize = '72px';
+            levelText.style.color = '#FFD700';
+            levelText.style.fontWeight = 'bold';
+            levelText.style.textShadow = '2px 2px 8px rgba(0, 0, 0, 0.8)';
+            levelText.style.zIndex = '100';
+            levelText.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+            levelText.style.padding = '20px 40px';
+            levelText.style.borderRadius = '20px';
+            
+            document.getElementById('game-container').appendChild(levelText);
+            
+            setTimeout(() => {
+                levelText.remove();
+                gameRunning = prevGameRunning;
+                gamePaused = prevGamePaused;
+                
+                if (gameRunning && !gamePaused) {
+                    gameLoop();
+                }
+            }, 2000);
+        }
+
+        // End game
+        function endGame() {
+            gameRunning = false;
+            gamePaused = false;
+            finalScoreElement.textContent = score;
+            gameOverScreen.style.display = 'flex';
+            pauseScreen.style.display = 'none';
+            
+            cancelAnimationFrame(animationId);
+            
+            controls.style.display = 'none';
+            pauseBtn.style.display = 'none';
+        }
+
+        // Start game
+        function startGame() {
+            console.log("Starting game...");
+            score = 0;
+            lives = 3;
+            level = 1;
+            pacman.speed = 2;
+            pacman.color = '#FFD700';
+            gamePaused = false;
+            
+            updateLevelIndicator();
+            
+            createTracks();
+            
+            const horizontalTracks = tracks.filter(t => t.direction === 'horizontal');
+            if (horizontalTracks.length > 0) {
+                const startTrack = horizontalTracks[0];
+                pacman.x = Math.floor(canvas.width / 4);
+                pacman.y = startTrack.start.y;
+                pacman.direction = { x: 1, y: 0 };
+                pacman.targetDirection = { x: 1, y: 0 };
+            } else {
+                const verticalTracks = tracks.filter(t => t.direction === 'vertical');
+                if (verticalTracks.length > 0) {
+                    const startTrack = verticalTracks[0];
+                    pacman.x = startTrack.start.x;
+                    pacman.y = Math.floor(canvas.height / 4);
+                    pacman.direction = { x: 0, y: 1 };
+                    pacman.targetDirection = { x: 0, y: 1 };
+                }
+            }
+            
+            if (!isOnTrack(pacman.x, pacman.y, 4)) {
+                const closestPoint = findClosestPointOnAnyTrack(pacman.x, pacman.y);
+                if (closestPoint) {
+                    pacman.x = closestPoint.x;
+                    pacman.y = closestPoint.y;
+                }
+            }
+            
+            scoreElement.textContent = score;
+            livesElement.textContent = lives;
+            
+            startScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            pauseScreen.style.display = 'none';
+            
+            controls.style.display = 'flex';
+            pauseBtn.style.display = 'flex';
+            
+            createDots();
+            createTrains();
+            
+            gameRunning = true;
+            
+            gameLoop();
+        }
+
+        // Main game loop
+        function gameLoop() {
+            if (!gameRunning || gamePaused) return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            drawTracks();
+            drawDots();
+            drawTrains();
+            drawPacman();
+            
+            movePacman();
+            moveTrains();
+            
+            checkDotCollisions();
+            checkTrainCollisions();
+            
+            if (!isOnTrack(pacman.x, pacman.y, 4)) {
+                const closestPoint = findClosestPointOnAnyTrack(pacman.x, pacman.y);
+                if (closestPoint) {
+                    pacman.x = closestPoint.x;
+                    pacman.y = closestPoint.y;
+                }
+            }
+            
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        // -----------------------------------------------
+        // Initialization and event listeners
+        // -----------------------------------------------
+
+        // Setup game controls
+        function setupControls() {
+            document.addEventListener('keydown', (e) => {
+                if (!gameRunning) return;
+                
+                if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
+                    if (gamePaused) {
+                        resumeGame();
+                    } else {
+                        pauseGame();
+                    }
+                    e.preventDefault();
+                    return;
+                }
+                
+                if (gamePaused) return;
+                
+                switch (e.key) {
+                    case 'ArrowUp':
+                        pacman.targetDirection = { x: 0, y: -1 };
+                        break;
+                    case 'ArrowDown':
+                        pacman.targetDirection = { x: 0, y: 1 };
+                        break;
+                    case 'ArrowLeft':
+                        pacman.targetDirection = { x: -1, y: 0 };
+                        break;
+                    case 'ArrowRight':
+                        pacman.targetDirection = { x: 1, y: 0 };
+                        break;
+                }
+                e.preventDefault();
+            });
+            
+            // Touch controls for direction
+            upBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameRunning && !gamePaused) pacman.targetDirection = { x: 0, y: -1 };
+            });
+            
+            downBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameRunning && !gamePaused) pacman.targetDirection = { x: 0, y: 1 };
+            });
+            
+            leftBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameRunning && !gamePaused) pacman.targetDirection = { x: -1, y: 0 };
+            });
+            
+            rightBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameRunning && !gamePaused) pacman.targetDirection = { x: 1, y: 0 };
+            });
+            
+            // Mouse controls for direction
+            upBtn.addEventListener('mousedown', () => {
+                if (gameRunning && !gamePaused) pacman.targetDirection = { x: 0, y: -1 };
+            });
+            
+            downBtn.addEventListener('mousedown', () => {
+                if (gameRunning && !gamePaused) pacman.targetDirection = { x: 0, y: 1 };
+            });
+            
+            leftBtn.addEventListener('mousedown', () => {
+                if (gameRunning && !gamePaused) pacman.targetDirection = { x: -1, y: 0 };
+            });
+            
+            rightBtn.addEventListener('mousedown', () => {
+                if (gameRunning && !gamePaused) pacman.targetDirection = { x: 1, y: 0 };
+            });
+            
+            // Pause button
+            pauseBtn.addEventListener('click', () => {
+                if (gameRunning) {
+                    if (gamePaused) {
+                        resumeGame();
+                    } else {
+                        pauseGame();
+                    }
+                }
+            });
+            
+            if (!('ontouchstart' in window)) {
+                controls.style.opacity = '0.5';
+            }
+        }
+
+        // Resize canvas when window size changes
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            if (gameRunning) {
+                createTracks();
+                createDots();
+                createTrains();
+            }
+        });
+
+        // Initialize game controls
+        setupControls();
+
+        // Add event listeners for start and restart buttons
+        document.getElementById('start-button').addEventListener('click', function() {
+            console.log("Start button clicked");
+            startGame();
+        });
+        
+        document.getElementById('restart-button').addEventListener('click', function() {
+            console.log("Restart button clicked");
+            startGame();
+        });
+        
+        document.getElementById('resume-button').addEventListener('click', function() {
+            console.log("Resume button clicked");
+            resumeGame();
+        });
+        
+        document.getElementById('restart-from-pause-button').addEventListener('click', function() {
+            console.log("Restart from pause button clicked");
+            startGame();
+        });
+        
+        // Hide pause button initially
+        pauseBtn.style.display = 'none';
+    });
+    </script>
+</body>
+</html>
